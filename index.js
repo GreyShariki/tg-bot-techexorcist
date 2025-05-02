@@ -8,7 +8,7 @@ const { allUsers } = require("./commands/allusers.js");
 const { deleteUser } = require("./commands/deleteUser.js");
 const { allRequests } = require("./commands/allRequests.js");
 const { changeStatus, success } = require("./commands/changeStatus.js");
-const webappUrl = "http://87.228.82.85";
+const webappUrl = "https://incomparable-medovik-4eb827.netlify.app/";
 bot.start((ctx) =>
   ctx.reply(
     "Добро пожаловать в TechExorcist. Опиши поломку или напиши /help для получения списка команд."
@@ -281,35 +281,31 @@ bot.command("allRequests", async (ctx) => {
     await ctx.reply("❌ Произошла ошибка при обработке запроса");
   }
 });
-bot.off("text");
-
 bot.command("bot", async (ctx) => {
-  ctx.reply("Что вы хотите спросить у китайского друга?");
+  await ctx.reply("Что вы хотите спросить у китайского друга?");
 
-  const textHandler = async (ctx) => {
-    if (ctx.message.text.startsWith("/")) {
-      bot.off("text", textHandler);
-      return;
-    }
+  try {
+    bot.on("text", async (ctx) => {
+      if (ctx.message.text.startsWith("/")) return;
 
-    const aiResponse = await askDeepSeek(ctx.message.text, API_KEY);
-    await ctx.reply(aiResponse, {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "📝 Создать заявку",
-              web_app: { url: webappUrl },
-            },
+      const aiResponse = await askDeepSeek(ctx.message.text, API_KEY);
+      await ctx.reply(aiResponse, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "📝 Создать заявку",
+                web_app: { url: webappUrl },
+              },
+            ],
           ],
-        ],
-      },
+        },
+      });
     });
-
-    bot.off("text", textHandler);
-  };
-
-  bot.on("text", textHandler);
+  } catch (error) {
+    console.error("Error in bot command:", error);
+    await ctx.reply("Время ожидания истекло или произошла ошибка");
+  }
 });
 bot.action(
   /^(accept|reject)_(tech|net|office|access|other)_(\d+)_([^_]+)_(\d+)$/,
