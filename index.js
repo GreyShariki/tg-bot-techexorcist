@@ -281,9 +281,17 @@ bot.command("allRequests", async (ctx) => {
     await ctx.reply("❌ Произошла ошибка при обработке запроса");
   }
 });
-bot.command("bot", async () => {
-  bot.on("text", async (ctx) => {
-    if (ctx.message.text.startsWith("/")) return;
+bot.off("text");
+
+bot.command("bot", async (ctx) => {
+  ctx.reply("Что вы хотите спросить у китайского друга?");
+
+  const textHandler = async (ctx) => {
+    if (ctx.message.text.startsWith("/")) {
+      bot.off("text", textHandler);
+      return;
+    }
+
     const aiResponse = await askDeepSeek(ctx.message.text, API_KEY);
     await ctx.reply(aiResponse, {
       reply_markup: {
@@ -297,7 +305,11 @@ bot.command("bot", async () => {
         ],
       },
     });
-  });
+
+    bot.off("text", textHandler);
+  };
+
+  bot.on("text", textHandler);
 });
 bot.action(
   /^(accept|reject)_(tech|net|office|access|other)_(\d+)_([^_]+)_(\d+)$/,
