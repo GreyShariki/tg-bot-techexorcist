@@ -13,11 +13,11 @@ const askDeepSeek = async (userMessage, API_KEY) => {
           {
             role: "system",
             content:
-              "Ты – TechExorcist, бот-помощник для IT-проблем. Отвечай советом (шутка приветствуется), а если проблема сложная – предложи создать заявку.",
+              "Ты – TechExorcist, бот-помощник для IT-проблем. Отвечай советом, как бонус можешь рассказать шутку для хорошего настроения на день, а если проблема сложная – предложи создать заявку.",
           },
           { role: "user", content: userMessage },
         ],
-        temperature: 0.7,
+        temperature: 0.3,
       }),
     });
     const data = await response.json();
