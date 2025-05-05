@@ -22,10 +22,17 @@ bot.help((ctx) =>
 );
 bot.command("deleteUser", async (ctx) => {
   ctx.reply("Введите айди пользователя (id)");
-  bot.on("text", async (ctx) => {
+  const textHandler = async (ctx) => {
+    if (!/^\d+$/.test(ctx.message.text)) {
+      return ctx.reply("Ошибка: ID должен быть числом. Попробуйте ещё раз.");
+    }
+
     const data = await deleteUser(ctx.from.id, ctx.message.text.trim());
-    ctx.reply(data);
-  });
+    await ctx.reply(data);
+    bot.off("text", textHandler); // Важно: отключаем обработчик
+  };
+
+  bot.once("text", textHandler);
 });
 bot.command("allusers", async (ctx) => {
   const data = await allUsers(ctx.from.id);
@@ -285,23 +292,20 @@ bot.command("bot", async (ctx) => {
   await ctx.reply("Что вы хотите спросить у китайского друга?");
 
   try {
-    bot.on("text", async (ctx) => {
+    const textHandler = async (ctx) => {
       if (ctx.message.text.startsWith("/")) return;
 
       const aiResponse = await askDeepSeek(ctx.message.text, API_KEY);
       await ctx.reply(aiResponse, {
         reply_markup: {
           inline_keyboard: [
-            [
-              {
-                text: "📝 Создать заявку",
-                web_app: { url: webappUrl },
-              },
-            ],
+            [{ text: "📝 Создать заявку", web_app: { url: webappUrl } }],
           ],
         },
       });
-    });
+      bot.off("text", textHandler);
+    };
+    bot.once("text", textHandler);
   } catch (error) {
     console.error("Error in bot command:", error);
     await ctx.reply("Время ожидания истекло или произошла ошибка");
