@@ -9,6 +9,7 @@ const { deleteUser } = require("./commands/deleteUser.js");
 const { allRequests } = require("./commands/allRequests.js");
 const { changeStatus, success } = require("./commands/changeStatus.js");
 const webappUrl = "https://incomparable-medovik-4eb827.netlify.app/";
+const userStates = new Map();
 bot.start((ctx) =>
   ctx.reply(
     "Добро пожаловать в TechExorcist. Опиши поломку или напиши /help для получения списка команд."
@@ -22,17 +23,7 @@ bot.help((ctx) =>
 );
 bot.command("deleteUser", async (ctx) => {
   ctx.reply("Введите айди пользователя (id)");
-  const textHandler = async (ctx) => {
-    if (!/^\d+$/.test(ctx.message.text)) {
-      return ctx.reply("Ошибка: ID должен быть числом. Попробуйте ещё раз.");
-    }
-
-    const data = await deleteUser(ctx.from.id, ctx.message.text.trim());
-    await ctx.reply(data);
-    bot.off("text", textHandler); // Важно: отключаем обработчик
-  };
-
-  bot.once("text", textHandler);
+  userStates.set(ctx.from.id, "awaitingDelete");
 });
 bot.command("allusers", async (ctx) => {
   const data = await allUsers(ctx.from.id);
@@ -290,25 +281,21 @@ bot.command("allRequests", async (ctx) => {
 });
 bot.command("bot", async (ctx) => {
   await ctx.reply("Что вы хотите спросить у китайского друга?");
+  userStates.set(ctx.from.id, "awaitingBotQuestion");
+});
+bot.on("text", async (ctx) => {
+  const state = userStates.get(ctx.from.id);
+  const input = ctx.message.text.trim();
 
-  try {
-    const textHandler = async (ctx) => {
-      if (ctx.message.text.startsWith("/")) return;
-
-      const aiResponse = await askDeepSeek(ctx.message.text, API_KEY);
-      await ctx.reply(aiResponse, {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: "📝 Создать заявку", web_app: { url: webappUrl } }],
-          ],
-        },
-      });
-      bot.off("text", textHandler);
-    };
-    bot.once("text", textHandler);
-  } catch (error) {
-    console.error("Error in bot command:", error);
-    await ctx.reply("Время ожидания истекло или произошла ошибка");
+  if (state === "awaitingDelete") {
+    const result = await deleteUser(ctx.from.id, input);
+    await ctx.reply(result);
+    userStates.delete(ctx.from.id);
+  } else if (state === "awaitingBotQuestion") {
+    if (input.startsWith("/")) return;
+    const result = await askDeepSeek(input, API_KEY);
+    await ctx.reply(result);
+    userStates.delete(ctx.from.id);
   }
 });
 bot.action(
