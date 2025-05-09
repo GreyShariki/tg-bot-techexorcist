@@ -294,7 +294,20 @@ bot.on("text", async (ctx) => {
   } else if (state === "awaitingBotQuestion") {
     if (input.startsWith("/")) return;
     const result = await askDeepSeek(input, API_KEY);
-    await ctx.reply(result);
+    await ctx.reply(result, {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "📝 Заполнить форму",
+              web_app: {
+                url: webappUrl,
+              },
+            },
+          ],
+        ],
+      },
+    });
     userStates.delete(ctx.from.id);
   }
 });
